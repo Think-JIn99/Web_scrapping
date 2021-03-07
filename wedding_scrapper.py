@@ -1,40 +1,39 @@
 import requests
 from bs4 import BeautifulSoup
 class Parsing:
-    def __init__(self,hrefs):
-        self.headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.192 Safari/537.36"}
-        self.hrefs = self.site_status(hrefs)
-    
-    def site_status(self,hrefs):
-        fine_sites_hrefs = [] 
-        for h in hrefs:
-            res = requests.get(h,self.headers)
-            try:
-                res.raise_for_status()
-                fine_sites_hrefs.append(h)
-            except requests.exceptions.HTTPError as e:
-                print(f"error page: {h}")
-                print(f"error: {e}")
-                continue
 
-        return fine_sites_hrefs
+    def __init__(self,href):
+        self.href = href
+        self.headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.192 Safari/537.36"}
+
+    def site_status(self,res):
+        can_connect = True
+        try:
+            res.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"error page: {self.href}")
+            print(f"error: {e}")
+            can_connect = False
         
+        return can_connect
+    
     def get_table(self):
-        for href in self.hrefs:
-            res = requests.get(href,headers = self.headers)
+        res = requests.get(self.href,headers = self.headers)
+        if self.site_status(res):
             soup = BeautifulSoup(res.text,"lxml")
             table = soup.find(["table","tbody"])
 
             if table:
                 #tbody태그도 찾아야 함
                 title = soup.find('title').get_text()
-                print(f"테이블 확인 페이지: {title} \t주소:{href}")
+                print(f"테이블 확인 페이지: {title} \t주소:{self.href}")
                 # self.extract_raw(table)
 
             else:
-                print(f"테이블 미확인 페이지: {href}")
-                continue
-    
+                print(f"테이블 미확인 페이지: {self.href}")
+        else:
+            return
+
 
     def extract_raw(self,table):
         print(table.get_text())
@@ -57,11 +56,13 @@ class Google_Api:
         return items
         # iterate over 10 results found
     def parse_data(self):
-        hrefs = []
-        for i,item in enumerate(self.items, start=1):
-            hrefs.append(item.get("link"))
-        return hrefs
-
+        parse_hrefs = []
+        for item in self.items:
+            p = Parsing(item.get("link"))
+            p.get_table()
+            parse_hrefs.append(p)
+         
+       
     def print_data(self):
         for i, search_item in enumerate(self.items, start=1):
             # get the page title
@@ -77,7 +78,5 @@ if __name__ == "__main__":
     query = "회원 경조사"
     page = 1
     google = Google_Api(query,page)
-    # google.print_data()
-    p = Parsing(google.parse_data())
+    google.parse_data()
     print("*"  * 20)
-    p.get_table()
