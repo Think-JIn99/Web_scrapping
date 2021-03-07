@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 class Parsing:
-
     def __init__(self,href):
         self.href = href
         self.headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.192 Safari/537.36"}
@@ -21,13 +21,13 @@ class Parsing:
         res = requests.get(self.href,headers = self.headers)
         if self.site_status(res):
             soup = BeautifulSoup(res.text,"lxml")
-            table = soup.find(["table","tbody"])
+            tables = soup.find_all("table")
 
-            if table:
+            if tables:
                 #tbody태그도 찾아야 함
                 title = soup.find('title').get_text()
                 print(f"테이블 확인 페이지: {title} \t주소:{self.href}")
-                # self.extract_raw(table)
+                self.extract_raw(tables)
 
             else:
                 print(f"테이블 미확인 페이지: {self.href}")
@@ -35,8 +35,14 @@ class Parsing:
             return
 
 
-    def extract_raw(self,table):
-        print(table.get_text())
+    def extract_raw(self,tables):
+        for table in tables:
+            td = table.find_all("td")
+            for t in td:
+                text = t.get_text()
+                text = text.
+                print(t.get_text())
+        
         
 
 class Google_Api:
