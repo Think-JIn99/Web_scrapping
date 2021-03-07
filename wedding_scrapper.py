@@ -4,25 +4,28 @@ import re
 from datetime import datetime
 from dateutil.relativedelta import *
 from dateutil.parser import *
+from requests.api import head
 class Parsing:
     def __init__(self,href):
         self.href = href
         self.headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.192 Safari/537.36"}
 
-    def site_status(self,res):
+    def site_status(self,href):
         can_connect = True
         try:
+            res = requests.get(href,headers = self.headers)
             res.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            print(f"error page: {self.href}")
+            
+        except (requests.exceptions.HTTPError,requests.exceptions.InvalidSchema) as e:
+            print(f"error page: {href}")
             print(f"error: {e}")
             can_connect = False
         
         return can_connect
     
     def get_table(self):
-        res = requests.get(self.href,headers = self.headers)
-        if self.site_status(res):
+        if self.site_status(self.href):
+            res = requests.get(self.href,headers = self.headers)
             soup = BeautifulSoup(res.text,"lxml")
             tables = soup.find_all("table")
 
@@ -64,17 +67,17 @@ class Parsing:
     def scrapping_artice(self,article_hrefs):
         scrap_impossible = []
         for ah in article_hrefs:
-            if self.site_status(requests.get(ah,headers = self.headers)): 
-                 soup = BeautifulSoup(requests.get(ah,headers = self.headers).text, "lxml")
-            elif self.site_status(requests.get(self.href + ah,headers = self.headers)): 
+            if self.site_status(ah): 
+                soup = BeautifulSoup(requests.get(ah,headers = self.headers).text, "lxml")
+            elif self.site_status(self.href + ah):
                 soup = BeautifulSoup(requests.get(self.href + ah,headers = self.headers).text,"lxml")
             else:
                 scrap_impossible.append(self.href) 
                 return
-            content = soup.find_all(class = re.compile("content"))
-            for c in content:
-                phone_num = re.search("\d{3}.\d{4}.\d{4}")
-                print(phone_num)
+            # content = soup.find_all(class_ = re.compile("content"))
+            # for c in content:
+            #     phone_num = re.search("\d{3}.\d{4}.\d{4}")
+            #     print(phone_num)
 
 
         
@@ -115,7 +118,7 @@ class Google_Api:
 
 if __name__ == "__main__":
     query = "회원 경조사"
-    page = 2
+    page = 1
     google = Google_Api(query,page)
     google.parse_data()
     print("*"  * 20)
