@@ -1,6 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from datetime import datetime
+from dateutil.relativedelta import *
+from dateutil.parser import *
 class Parsing:
     def __init__(self,href):
         self.href = href
@@ -36,14 +39,25 @@ class Parsing:
 
 
     def extract_raw(self,tables):
+        articles = []
         for table in tables:
-            td = table.find_all("td")
-            for t in td:
+            tr = table.find_all("tr")
+            for t in tr:
                 text = t.get_text()
-                text = text.
-                print(t.get_text())
-        
-        
+                if "결혼" in text:
+                    upload_time = re.search('(\d{4}).(\d\d).(\d\d)',text)
+                    if upload_time:
+                        now = datetime.now()
+                        upload_time = parse(upload_time.group())
+                        start_date = now - relativedelta(months =+ 1)
+                        end_date = now + relativedelta(months =+ 1)
+                        if  start_date < upload_time < end_date:
+                            article_href = t.find("a")['href'] 
+                            articles.append(article_href)
+                            print(f"내용: {text} 시간:{upload_time} href:{article_href}") 
+                    else:
+                        continue
+      
 
 class Google_Api:
     def __init__(self,query,page):
