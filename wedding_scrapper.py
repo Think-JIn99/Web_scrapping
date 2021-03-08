@@ -75,11 +75,17 @@ class Crawler:
     def get_content(self):
         tables = self.site_soup.find_all("table")
         content = ""
+        title = self.site_soup.find('title')
+        if title:
+            title = title.get_text()
+        else:
+            title = "None"
+
         if tables:
-            print(f"사이트 제목: {self.site_soup.find('title').get_text()} \n 테이블 확인: {self.href} ")
+            print(f"사이트 제목: {title} \n 테이블 확인: {self.href} ")
             content = self.crawling_table(tables)
         else:
-            print(f"사이트 제목: {self.site_soup.find('title').get_text()} \n 테이블 미확인: {self.href} ")
+            print(f"사이트 제목: {title} \n 테이블 미확인: {self.href} ")
             content = self.crawling_nontable()
 
         return content
@@ -95,33 +101,35 @@ class Google_API:
         start = (self.page - 1) * 10 + 1
         url =  f"https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={SEARCH_ENGINE_ID}&q={self.query}&start={start}"
         data = requests.get(url).json()
-        # get the result items
-        items = data.get("items")
-        return items
-        # iterate over 10 results found
+        hrefs = []
+        for item in data.get("items"):
+            hrefs.append(item.get("link"))
 
-class Naver_API:
+        return hrefs
+        # get the result items    
+        # iterate over 10 results found
+class Naver:
     def __init__(self,query,page):
         self.query = query
         self.page = page
-        self.items = self.get_search_data()
+  
+    def get_search_data(self): 
+        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={i}&query={self.query}"
+        site = Site(url).site_status()
+        if site:
+            soup = BeautifulSoup(site.text,"lxml")
+            links = soup.find_all("a",attrs={"class":"link_tit"})
+        
+        hrefs = []
+        for link in links:  
+            hrefs.append(link["href"])
 
-    def get_search_data(self):
-        Client_ID = "AUocdELFYLK2MNZYTtpj"
-        Client_Secret = "GiYlez4DCe"
-        start = (self.page - 1) * 10 + 1
-        url = f"https://openapi.naver.com/v1/search/webkr?query={query}&start={start}"
-        header = {
-        "X-Naver-Client-Id": Client_ID,
-        "X-Naver-Client-Secret":Client_Secret
-    }
-        data = requests.get(url,headers = header).json()
-        items = data.get("items")
-        return items
-    
-def use_api(items,f):
-    for item in items:
-        href = item.get("link")
+        return hrefs
+
+
+        
+def use_api(hrefs,f):
+    for href in hrefs:
         site = Site(href).site_status()
         if site:
             c = Crawler(site,href)
@@ -130,16 +138,16 @@ def use_api(items,f):
                 f.write(content + "\n")
 
 if __name__ == "__main__":
-    query = ["경조사","회원 동정","회원 경조사"]
-    page = range(1,20)
+    query = ["회원 동정","회원 경조사","경조사"]
+    page = range(1,10) #start,end
     for qi in range(len(query)):
         f = open(f"google_{query[qi]}.txt","w",encoding="UTF-8")
         nf = open(f"naver_{query[qi]}.txt","w",encoding="UTF-8")
         for i in page:
-            # google = Google_API(query[qi],i).get_search_data()
-            naver = Naver_API(query[qi],i).get_search_data()
-            # use_api(google,f)
-            use_api(naver,f)
+            naver = Naver(query[qi],i).get_search_data()
+            google = Google_API(query[qi],i).get_search_data()
+            use_api(google,f)
+            use_api(naver,nf)
 
     f.close()
     nf.close()
