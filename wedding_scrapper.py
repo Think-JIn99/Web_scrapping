@@ -31,7 +31,10 @@ class Crawler:
         upload_time = re.search('\d{4}.\d\d.\d\d', text) #데이터 형식이 숫자 4 2 2 인 것 모두
         if upload_time:
             now = datetime.now()
-            upload_time = parse(upload_time.group())
+            try:
+                upload_time = parse(upload_time.group())
+            except:
+                return
             start_date = now - relativedelta(months =+ 1) #게시글의 최소 날짜
             end_date = now + relativedelta(months =+ 1) #게시글의 최대 날짜
             if  start_date < upload_time < end_date: #가끔 전화번호 잘못 긁어서 범위 설정함
@@ -73,19 +76,22 @@ class Crawler:
         tables = self.site_soup.find_all("table")
         content = ""
         if tables:
+            print(f"사이트 제목: {self.site_soup.find('title').get_text()} \n 테이블 확인: {self.href} ")
             content = self.crawling_table(tables)
         else:
+            print(f"사이트 제목: {self.site_soup.find('title').get_text()} \n 테이블 미확인: {self.href} ")
             content = self.crawling_nontable()
+
         return content
-class Google_Api:
+class Google_API:
     def __init__(self,query,page):
         self.query = query
         self.page = page
         self.items = self.get_search_data()
 
     def get_search_data(self):
-        API_KEY = "AIzaSyApjaXPzCPV-u-eLAj80VRaxN80g8QeM-s"
-        SEARCH_ENGINE_ID = "2fab675f50af251dd"
+        API_KEY = "AIzaSyCoOjeELwfwkaSy_rIqYMyJf8fIbPNai8I"
+        SEARCH_ENGINE_ID = "93d897fa50c427465"
         start = (self.page - 1) * 10 + 1
         url =  f"https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={SEARCH_ENGINE_ID}&q={self.query}&start={start}"
         data = requests.get(url).json()
@@ -94,32 +100,48 @@ class Google_Api:
         return items
         # iterate over 10 results found
 
-       
-    def print_data(self):
-        for i, search_item in enumerate(self.items, start=1):
-            # get the page title
-            title = search_item.get("title")
-            # extract the page url
-            link = search_item.get("link")
-            # print the results
-            print("="*10, f"Result #{i+page-1}", "="*10)
-            print("Title:", title)
-            print("URL:", link, "\n")
+class Naver_API:
+    def __init__(self,query,page):
+        self.query = query
+        self.page = page
+        self.items = self.get_search_data()
+
+    def get_search_data(self):
+        Client_ID = "AUocdELFYLK2MNZYTtpj"
+        Client_Secret = "GiYlez4DCe"
+        start = (self.page - 1) * 10 + 1
+        url = f"https://openapi.naver.com/v1/search/webkr?query={query}&start={start}"
+        header = {
+        "X-Naver-Client-Id": Client_ID,
+        "X-Naver-Client-Secret":Client_Secret
+    }
+        data = requests.get(url,headers = header).json()
+        items = data.get("items")
+        return items
+    
+def use_api(items,f):
+    for item in items:
+        href = item.get("link")
+        site = Site(href).site_status()
+        if site:
+            c = Crawler(site,href)
+            content = c.get_content()
+            if content:
+                f.write(content + "\n")
 
 if __name__ == "__main__":
     query = ["경조사","회원 동정","회원 경조사"]
-    page = range(1,2)
-    f = open(f"{query[0]}.txt","w",encoding="UTF-8")
-    for i in page:
-        google = Google_Api(query[0],i)
-        for item in google.items:
-            href = item.get("link")
-            site = Site(href).site_status()
-            if site:
-                c = Crawler(site,href)
-                content = c.get_content()
-                if content:
-                    f.write(content + "\n")
+    page = range(1,20)
+    for qi in range(len(query)):
+        f = open(f"google_{query[qi]}.txt","w",encoding="UTF-8")
+        nf = open(f"naver_{query[qi]}.txt","w",encoding="UTF-8")
+        for i in page:
+            # google = Google_API(query[qi],i).get_search_data()
+            naver = Naver_API(query[qi],i).get_search_data()
+            # use_api(google,f)
+            use_api(naver,f)
+
     f.close()
+    nf.close()
 
     
