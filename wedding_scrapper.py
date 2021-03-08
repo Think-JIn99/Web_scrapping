@@ -114,7 +114,7 @@ class Naver:
         self.page = page
   
     def get_search_data(self): 
-        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={i}&query={self.query}"
+        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={self.page}&query={self.query}&research_url=&sm=tab_pge&start={self.page - 1}&where=web"
         site = Site(url).site_status()
         if site:
             soup = BeautifulSoup(site.text,"lxml")
@@ -138,15 +138,15 @@ def use_api(hrefs,f):
                 f.write(content + "\n")
 
 if __name__ == "__main__":
-    query = ["회원 동정","회원 경조사","경조사"]
+    query = ["경조사","회원경조사","회원동정"]
     page = range(1,10) #start,end
     for qi in range(len(query)):
         f = open(f"google_{query[qi]}.txt","w",encoding="UTF-8")
         nf = open(f"naver_{query[qi]}.txt","w",encoding="UTF-8")
         for i in page:
             naver = Naver(query[qi],i).get_search_data()
-            google = Google_API(query[qi],i).get_search_data()
-            use_api(google,f)
+            # google = Google_API(query[qi],i).get_search_data()
+            # use_api(google,f)
             use_api(naver,nf)
 
     f.close()
