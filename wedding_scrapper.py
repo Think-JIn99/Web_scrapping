@@ -1,4 +1,3 @@
-from typing import Text
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -28,7 +27,11 @@ class Crawler:
         self.href = href
 
     def time_check(self,text):
-        upload_time = re.search('\d{4}.\d\d.\d\d|\d{2}.\d{2}', text) #데이터 형식이 숫자 4 2 2 인 것 모두
+        upload_time = re.search('\d{4}.\d\d.\d\d',text) #날짜 형식의 데이터 추출
+
+        if not upload_time:
+            upload_time = re.search('\d\d.\d\d',text) #날짜 형식의 데이터 추출
+
         if upload_time:
             now = datetime.now()
             try:
@@ -38,58 +41,37 @@ class Crawler:
             start_date = now - relativedelta(months =+ 1) #게시글의 최소 날짜
             end_date = now + relativedelta(months =+ 1) #게시글의 최대 날짜
             if  start_date < upload_time < end_date: #가끔 전화번호 잘못 긁어서 범위 설정함
-                # print(f"내용: {text} 시간:{upload_time} \nsite_href:{self.href}")
-                return self.href
+                print(f"결혼 정보 사용가능 사이트 : {self.href}")
+                return True #사용 가능한 정보면 파일에 입력
+        return
 
-
-    def crawling_nontable(self):
-        selcet_tag = []
-        for tag in self.site_soup.find_all("a"):
-            try:
-                parent = tag.parent
-                selcet_tag.append(parent)
-
-            except AttributeError:
-                print(f"No parent on {tag}\n")
-
-        for tag in selcet_tag:
-            text = tag.get_text()
-            if "결혼" in text:
-                return self.time_check(text)
-            else:
-                continue
-
-
-    def crawling_table(self,tables):
+    def crawling_table(self):
+        tables = self.site_soup.find_all("table")
+        is_useful_href = False
         #결혼이란 키워드를 포함하고 최근 날짜에 올라온 게시글의 링크 모음
         for table in tables:
             rows = table.find_all("tr") #테이블의 가로를 스크래핑
             for r in rows:
                 text = r.get_text()
-                if re.search("결혼|자혼|혼인",text):
-                    print(text)
-                    return self.time_check(text)
+                if re.search("결혼|자혼",text):
+                    print(self.href)
+                    is_useful_href = self.time_check(text)
+                    if is_useful_href:
+                        return self.href
+                    # 시간 조건을 확인하고 만족하면 이 사이트에는 적어도 1개의 유용한 결혼정보가 존재하므로 url을 전달
+
                 else:
                     continue
+        return 
         
-
-    def get_content(self):
-        tables = self.site_soup.find_all("table")
-        content = ""
+    def print_title(self):
         title = self.site_soup.find('title')
         if title:
             title = title.get_text()
         else:
             title = "None"
-
-        if tables:
-            print(f"사이트 제목: {title} \n 테이블 확인: {self.href} ")
-            content = self.crawling_table(tables)
-        else:
-            print(f"사이트 제목: {title} \n 테이블 미확인: {self.href} ")
-            content = self.crawling_nontable()
-
-        return content
+        print(f"사이트 제목: {title} \n 사이트 주소: {self.href}")
+        return 
 class Google_API:
     def __init__(self,query,page):
         self.query = query
@@ -109,6 +91,7 @@ class Google_API:
         return hrefs
         # get the result items    
         # iterate over 10 results found
+        
 class Naver:
     def __init__(self,query,page):
         self.query = query
@@ -127,27 +110,35 @@ class Naver:
 
         return hrefs
         
-def use_api(hrefs,f):
-    for href in hrefs:
-        site = Site(href).site_status()
-        if site:
-            c = Crawler(site,href)
-            content = c.get_content()
-            if content:
-                f.write(content + "\n")
-
 if __name__ == "__main__":
-    # ,"경조사","회원 경조사"
-    query = ["경조사 알림"]
-    page = range(1,2) #start,end
-    f = open(f"result.txt","w",encoding="UTF-8")
-    for qi in range(len(query)):
-        for i in page:
-            # naver = Naver(query[qi],i).get_search_data()
-            google = Google_API(query[qi],i).get_search_data()
-            use_api(google,f)
-            # use_api(naver,f)
 
+    def use_crawler(hrefs):
+        useful_hrefs = []
+        for href in hrefs:
+            site = Site(href).site_status()
+            if site:
+                c = Crawler(site,href)
+                c.print_title() #사이트 제목 출력
+                content = c.crawling_table() #테이블에 있는 데이터 긁어오기
+                if content:
+                    useful_hrefs.append(content)
+                  
+        return useful_hrefs
+
+    query = ["경조사 알림,경조사,회원 경조사"]
+    page =  int(input("탐색 페이지 수:  "))
+    start =  int(input("탐색 페이지 수:  "))
+    f = open(f"result.txt","w",encoding="UTF-8")
+    
+    for qi in range(len(query)):
+        for i in range(start,page):
+            naver = Naver(query[qi],i).get_search_data()
+            google = Google_API(query[qi],i).get_search_data()
+            res = use_crawler(naver)
+            res.extend(use_crawler(google))
+            if res:
+                for r in res:
+                    f.write(r + "\n")
     f.close()
 
     
