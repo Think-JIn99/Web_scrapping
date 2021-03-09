@@ -28,7 +28,7 @@ class Crawler:
         self.href = href
 
     def time_check(self,text):
-        upload_time = re.search('\d{4}.\d\d.\d\d', text) #데이터 형식이 숫자 4 2 2 인 것 모두
+        upload_time = re.search('\d{4}.\d\d.\d\d|\d{2}.\d{2}', text) #데이터 형식이 숫자 4 2 2 인 것 모두
         if upload_time:
             now = datetime.now()
             try:
@@ -38,7 +38,7 @@ class Crawler:
             start_date = now - relativedelta(months =+ 1) #게시글의 최소 날짜
             end_date = now + relativedelta(months =+ 1) #게시글의 최대 날짜
             if  start_date < upload_time < end_date: #가끔 전화번호 잘못 긁어서 범위 설정함
-                print(f"내용: {text} 시간:{upload_time} \nsite_href:{self.href}")
+                # print(f"내용: {text} 시간:{upload_time} \nsite_href:{self.href}")
                 return self.href
 
 
@@ -66,7 +66,8 @@ class Crawler:
             rows = table.find_all("tr") #테이블의 가로를 스크래핑
             for r in rows:
                 text = r.get_text()
-                if "결혼" in text:
+                if re.search("결혼|자혼|혼인",text):
+                    print(text)
                     return self.time_check(text)
                 else:
                     continue
@@ -96,8 +97,8 @@ class Google_API:
         self.items = self.get_search_data()
 
     def get_search_data(self):
-        API_KEY = "AIzaSyCoOjeELwfwkaSy_rIqYMyJf8fIbPNai8I"
-        SEARCH_ENGINE_ID = "93d897fa50c427465"
+        API_KEY = "AIzaSyAQuWE-QFadlKJ3BLSM_LeEdqxFXwE7Tn4"
+        SEARCH_ENGINE_ID = "e15ba323e66efc543"
         start = (self.page - 1) * 10 + 1
         url =  f"https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={SEARCH_ENGINE_ID}&q={self.query}&start={start}"
         data = requests.get(url).json()
@@ -114,7 +115,7 @@ class Naver:
         self.page = page
   
     def get_search_data(self): 
-        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={self.page}&query={self.query}&research_url=&sm=tab_pge&start={self.page - 1}&where=web"
+        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={self.page + 1}&query={self.query}&research_url=&sm=tab_pge&start={self.page}&where=web"
         site = Site(url).site_status()
         if site:
             soup = BeautifulSoup(site.text,"lxml")
@@ -125,8 +126,6 @@ class Naver:
             hrefs.append(link["href"])
 
         return hrefs
-
-
         
 def use_api(hrefs,f):
     for href in hrefs:
@@ -138,18 +137,17 @@ def use_api(hrefs,f):
                 f.write(content + "\n")
 
 if __name__ == "__main__":
-    query = ["경조사","회원경조사","회원동정"]
-    page = range(1,10) #start,end
+    # ,"경조사","회원 경조사"
+    query = ["경조사 알림"]
+    page = range(1,2) #start,end
+    f = open(f"result.txt","w",encoding="UTF-8")
     for qi in range(len(query)):
-        f = open(f"google_{query[qi]}.txt","w",encoding="UTF-8")
-        nf = open(f"naver_{query[qi]}.txt","w",encoding="UTF-8")
         for i in page:
-            naver = Naver(query[qi],i).get_search_data()
-            # google = Google_API(query[qi],i).get_search_data()
-            # use_api(google,f)
-            use_api(naver,nf)
+            # naver = Naver(query[qi],i).get_search_data()
+            google = Google_API(query[qi],i).get_search_data()
+            use_api(google,f)
+            # use_api(naver,f)
 
     f.close()
-    nf.close()
 
     
