@@ -34,6 +34,7 @@ class Crawler:
 
         if upload_time:
             now = datetime.now()
+
             try:
                 upload_time = parse(upload_time.group())
             except:
@@ -53,7 +54,7 @@ class Crawler:
             rows = table.find_all("tr") #테이블의 가로를 스크래핑
             for r in rows:
                 text = r.get_text()
-                if re.search("결혼|자혼",text):
+                if re.search("결혼|자혼|혼인",text):
                     print(self.href)
                     is_useful_href = self.time_check(text)
                     if is_useful_href:
@@ -129,7 +130,7 @@ if __name__ == "__main__":
     page =  int(input("탐색 페이지 수:  "))
     start =  int(input("탐색 페이지 수:  "))
     f = open(f"result.txt","w",encoding="UTF-8")
-    
+
     for qi in range(len(query)):
         for i in range(start,page):
             naver = Naver(query[qi],i).get_search_data()
