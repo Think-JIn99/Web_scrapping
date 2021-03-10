@@ -12,7 +12,7 @@ class Site:
 
     def site_status(self):
         try:
-            res = requests.get(self.href,headers = self.headers)
+            res = requests.get(self.href,headers = self.headers,timeout = 4)
             res.raise_for_status()
             
         except requests.exceptions.RequestException as e:
@@ -55,7 +55,6 @@ class Crawler:
             for r in rows:
                 text = r.get_text()
                 if re.search("결혼|자혼|혼인",text):
-                    print(self.href)
                     is_useful_href = self.time_check(text)
                     if is_useful_href:
                         return self.href
@@ -80,14 +79,19 @@ class Google_API:
         self.items = self.get_search_data()
 
     def get_search_data(self):
-        API_KEY = "AIzaSyAQuWE-QFadlKJ3BLSM_LeEdqxFXwE7Tn4"
-        SEARCH_ENGINE_ID = "e15ba323e66efc543"
+        API_KEY = "AIzaSyD7cjOa87EG2Hl2pbud0admL2jioavn3gE"
+        SEARCH_ENGINE_ID = "b52dc74cb5b77ac28"
         start = (self.page - 1) * 10 + 1
         url =  f"https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={SEARCH_ENGINE_ID}&q={self.query}&start={start}"
         data = requests.get(url).json()
         hrefs = []
-        for item in data.get("items"):
-            hrefs.append(item.get("link"))
+        items = data.get('items')
+        if items:
+            for item in items:
+                hrefs.append(item.get("link"))
+        else:
+            print("NO items")
+            return
 
         return hrefs
         # get the result items    
@@ -99,7 +103,8 @@ class Naver:
         self.page = page
   
     def get_search_data(self): 
-        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={self.page + 1}&query={self.query}&research_url=&sm=tab_pge&start={self.page}&where=web"
+        start = (self.page -1) * 15 + 1 
+        url = f"https://search.naver.com/search.naver?display=15&f=&filetype=0&page={self.page + 1}&query={self.query}&research_url=&sm=tab_pge&start={start}&where=web"
         site = Site(url).site_status()
         if site:
             soup = BeautifulSoup(site.text,"lxml")
@@ -115,31 +120,36 @@ if __name__ == "__main__":
 
     def use_crawler(hrefs):
         useful_hrefs = []
-        for href in hrefs:
-            site = Site(href).site_status()
-            if site:
-                c = Crawler(site,href)
-                c.print_title() #사이트 제목 출력
-                content = c.crawling_table() #테이블에 있는 데이터 긁어오기
-                if content:
-                    useful_hrefs.append(content)
-                  
+        if hrefs:
+            for href in hrefs:
+                site = Site(href).site_status()
+                if site:
+                    c = Crawler(site,href)
+                    c.print_title() #사이트 제목 출력
+                    content = c.crawling_table() #테이블에 있는 데이터 긁어오기
+                    if content:
+                        useful_hrefs.append(content)
+        else:
+            return
+
         return useful_hrefs
 
-    query = ["경조사 알림,경조사,회원 경조사"]
-    page =  int(input("탐색 페이지 수:  "))
-    start =  int(input("탐색 페이지 수:  "))
+    query = ["경조사 알림","경조사","회원 경조사"]
+    # start =  int(input("시작 페이지:  "))
+    # page =  int(input("탐색 페이지 수:  "))
+    start,end = (1,10) # naver google 모두 제공하는 검색 데이터가 10 page까지
     f = open(f"result.txt","w",encoding="UTF-8")
-
     for qi in range(len(query)):
-        for i in range(start,page):
+        for i in range(start,end):
             naver = Naver(query[qi],i).get_search_data()
             google = Google_API(query[qi],i).get_search_data()
             res = use_crawler(naver)
-            res.extend(use_crawler(google))
             if res:
+                res.extend(use_crawler(google))
                 for r in res:
                     f.write(r + "\n")
+                    
+            else: continue
     f.close()
 
     
