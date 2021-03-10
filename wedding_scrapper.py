@@ -135,21 +135,22 @@ if __name__ == "__main__":
         return useful_hrefs
 
     query = ["경조사 알림","경조사","회원 경조사"]
-    # start =  int(input("시작 페이지:  "))
-    # page =  int(input("탐색 페이지 수:  "))
-    start,end = (1,10) # naver google 모두 제공하는 검색 데이터가 10 page까지
-    f = open(f"result.txt","w",encoding="UTF-8")
+    start,end = (1,2) # naver google 모두 제공하는 검색 데이터가 10 page까지
+    file_date = datetime.today().strftime('%m-%d')
+    f = open(f"{file_date}.txt","w",encoding="UTF-8")
     for qi in range(len(query)):
         for i in range(start,end):
             naver = Naver(query[qi],i).get_search_data()
             google = Google_API(query[qi],i).get_search_data()
-            res = use_crawler(naver)
-            if res:
-                res.extend(use_crawler(google))
-                for r in res:
+            n_res = use_crawler(naver)
+            g_res = use_crawler(google)
+
+            if g_res:
+                n_res.extend(g_res)
+
+            if n_res:
+                for r in n_res:
                     f.write(r + "\n")
-                    
-            else: continue
     f.close()
 
     
