@@ -19,30 +19,39 @@ class Site:
             print(f"error page: {self.href}")
             print(f"error: {e}")
             return False
-        
-        return res
+            
+        else:
+            return res
 class Crawler:
     def __init__(self,res,href):
         self.site_soup = BeautifulSoup(res.text,"lxml")
         self.href = href
 
     def time_check(self,text):
-        upload_time = re.search('\d{4}.\d\d.\d\d',text) #날짜 형식의 데이터 추출
+        time_expresses = ['\d{4}.\d\d.\d\d','\d\d.\d\d.\d\d','\d\d.\d\d']
+        upload_time = None #날짜 형식의 데이터 추출
+        for t_express in time_expresses:
+            upload_time = re.search(t_express,text)
+            if upload_time:
+                break
 
-        if not upload_time:
-            upload_time = re.search('\d\d.\d\d',text) #날짜 형식의 데이터 추출
+            else: continue
 
         if upload_time:
             now = datetime.now()
-
             try:
-                upload_time = parse(upload_time.group())
+                print(upload_time.group())
+                upload_time = parse(upload_time.group(),yearfirst = True)
+                
             except:
+                print("날짜변환 오류")
                 return
-            start_date = now - relativedelta(months =+ 1) #게시글의 최소 날짜
+
+            start_date = now - relativedelta(days =+ 5) #게시글의 최소 날짜
             end_date = now + relativedelta(months =+ 1) #게시글의 최대 날짜
+            # print(start_date)
             if  start_date < upload_time < end_date: #가끔 전화번호 잘못 긁어서 범위 설정함
-                print(f"결혼 정보 사용가능 사이트 : {self.href}")
+                print(f"***********결혼 정보 사용가능 사이트 : {self.href}")
                 return True #사용 가능한 정보면 파일에 입력
         return
 
@@ -90,7 +99,7 @@ class Google_API:
             for item in items:
                 hrefs.append(item.get("link"))
         else:
-            print("NO items")
+            print("Google NO items")
             return
 
         return hrefs
@@ -113,11 +122,13 @@ class Naver:
         hrefs = []
         for link in links:  
             hrefs.append(link["href"])
+            
+        if not hrefs:
+            print("Naver no items")
 
         return hrefs
         
 if __name__ == "__main__":
-
     def use_crawler(hrefs):
         useful_hrefs = []
         if hrefs:
@@ -134,10 +145,11 @@ if __name__ == "__main__":
 
         return useful_hrefs
 
-    query = ["경조사 알림","경조사","회원 경조사"]
+    query = ["경조사 알림","경조사","회원 경조사","회원소식","회원동정"]
     start,end = (1,2) # naver google 모두 제공하는 검색 데이터가 10 page까지
     file_date = datetime.today().strftime('%m-%d')
     f = open(f"{file_date}.txt","w",encoding="UTF-8")
+    
     for qi in range(len(query)):
         for i in range(start,end):
             naver = Naver(query[qi],i).get_search_data()
