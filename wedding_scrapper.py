@@ -47,7 +47,7 @@ class Crawler:
                 print("날짜변환 오류")
                 return
 
-            start_date = now - relativedelta(days =+ 5) #게시글의 최소 날짜
+            start_date = now - relativedelta(days =+ 1) #게시글의 최소 날짜
             end_date = now + relativedelta(months =+ 1) #게시글의 최대 날짜
             # print(start_date)
             if  start_date < upload_time < end_date: #가끔 전화번호 잘못 긁어서 범위 설정함
