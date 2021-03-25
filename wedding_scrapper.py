@@ -8,8 +8,7 @@ from dateutil.parser import *
 class Site:
     def __init__(self,href):
         self.href = href
-        self.headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.192 Safari/537.36"}
-
+        self.headers = {}
     def site_status(self):
         try:
             res = requests.get(self.href,headers = self.headers,timeout = 4)
