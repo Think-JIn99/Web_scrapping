@@ -28,7 +28,7 @@ class Crawler:
         self.href = href
 
     def time_check(self,text):
-        time_expresses = ['\d{4}.\d\d.\d\d','\d\d.\d\d.\d\d','\d\d.\d\d']
+        time_expresses = ['\d{4}[\.\-]\d\d[\.\-]\d\d','\d\d[\.\-]\d\d[\.\-]\d\d','\d\d[\.\-]\d\d']
         upload_time = None #날짜 형식의 데이터 추출
         for t_express in time_expresses:
             upload_time = re.search(t_express,text)
@@ -40,14 +40,13 @@ class Crawler:
         if upload_time:
             now = datetime.now()
             try:
-                print(upload_time.group())
                 upload_time = parse(upload_time.group(),yearfirst = True)
                 
             except:
                 print("날짜변환 오류")
                 return
 
-            start_date = now - relativedelta(days =+ 1) #게시글의 최소 날짜
+            start_date = now - relativedelta(days =+ 2) #게시글의 최소 날짜
             end_date = now + relativedelta(months =+ 1) #게시글의 최대 날짜
             # print(start_date)
             if  start_date < upload_time < end_date: #가끔 전화번호 잘못 긁어서 범위 설정함
@@ -146,7 +145,7 @@ if __name__ == "__main__":
         return useful_hrefs
 
     query = ["경조사 알림","경조사","회원 경조사","회원소식","회원동정"]
-    start,end = (1,2) # naver google 모두 제공하는 검색 데이터가 10 page까지
+    start,end = (1,10) # naver google 모두 제공하는 검색 데이터가 10 page까지
     file_date = datetime.today().strftime('%m-%d')
     f = open(f"{file_date}.txt","w",encoding="UTF-8")
     
