@@ -86,8 +86,8 @@ class Google_API:
         self.items = self.get_search_data()
 
     def get_search_data(self):
-        API_KEY = "AIzaSyD7cjOa87EG2Hl2pbud0admL2jioavn3gE"
-        SEARCH_ENGINE_ID = "b52dc74cb5b77ac28"
+        API_KEY = ""
+        SEARCH_ENGINE_ID = ""
         start = (self.page - 1) * 10 + 1
         url =  f"https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={SEARCH_ENGINE_ID}&q={self.query}&start={start}"
         data = requests.get(url).json()
